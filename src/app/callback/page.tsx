@@ -3,13 +3,13 @@
 import { Button } from "@/components/ui/button";
 import { exchangeCodeForToken, getStoredState } from "@/lib/spotify";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 
-export default function Callback() {
+function CallbackContent() {
 	const router = useRouter();
 	const searchParams = useSearchParams();
 	const [error, setError] = useState<string | null>(null);
-	const [isLoading, setIsLoading] = useState(true);
+	const [_isLoading, setIsLoading] = useState(true);
 
 	useEffect(() => {
 		const handleCallback = async () => {
@@ -19,6 +19,8 @@ export default function Callback() {
 			const state = searchParams.get("state");
 			const storedState = getStoredState();
 			const hasError = searchParams.get("error");
+
+			// Keep isLoading true while we process - shows skeleton UI
 
 			if (hasError) {
 				console.error("Auth error from Spotify:", hasError);
@@ -52,8 +54,10 @@ export default function Callback() {
 					throw new Error("Failed to exchange code for token");
 				}
 
-				console.log("Authentication successful, redirecting to playlists");
-				// Successfully authenticated, redirect to playlists page
+				console.log("Authentication successful, redirecting to playlists page...");
+				// Keep showing skeletons during transition
+				// Don't set isLoading to false as we want to keep showing the skeleton UI
+				// Immediately redirect to playlists page - the skeleton UI there will show while data loads
 				router.push("/playlists");
 			} catch (err) {
 				console.error("Error during token exchange:", err);
@@ -93,24 +97,77 @@ export default function Callback() {
 		);
 	}
 
+	// We'll use the skeleton UI pattern for both states and auto-redirect instead of showing a success message
+	// This creates a more consistent experience across the app
 	return (
 		<div className="flex min-h-screen flex-col items-center justify-center p-4">
-			<div className="text-center">
-				{isLoading ? (
-					<>
-						<div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-primary border-b-2" />
-						<h2 className="mb-2 font-semibold text-xl">Completing Authentication</h2>
-						<p className="text-muted-foreground">Please wait while we complete the authentication process...</p>
-					</>
-				) : (
-					<>
-						<h2 className="mb-4 font-semibold text-xl">Authentication Complete!</h2>
-						<Button onClick={() => router.push("/playlists")} variant="default" className="mt-2">
-							View Your Playlists
-						</Button>
-					</>
-				)}
+			<div className="mx-auto flex w-full max-w-6xl flex-col gap-8">
+				<div className="mx-auto flex w-full max-w-6xl flex-col gap-2">
+					<div className="h-8 w-3/4 animate-pulse rounded-md bg-muted md:w-1/2" />
+					<div className="h-4 w-full animate-pulse rounded-md bg-muted md:w-3/4" />
+				</div>
+
+				<div className="mx-auto grid w-full max-w-7xl grid-cols-1 gap-6 md:grid-cols-3 lg:grid-cols-4">
+					{/* Skeleton cards */}
+					{Array.from({ length: 8 }).map((_, _index) => {
+						const skeletonId = `skeleton-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+						return (
+							<div key={skeletonId} className="flex flex-col rounded-lg border bg-card shadow-sm">
+								<div className="p-4">
+									<div className="mb-2 h-6 w-3/4 animate-pulse rounded-md bg-muted" />
+								</div>
+								<div className="px-4 py-2">
+									<div className="relative mb-2 aspect-square w-full animate-pulse rounded-md bg-muted" />
+									<div className="mb-2 h-4 w-20 animate-pulse rounded-md bg-muted" />
+								</div>
+								<div className="p-4 pt-0">
+									<div className="h-10 w-full animate-pulse rounded-md bg-muted" />
+								</div>
+							</div>
+						);
+					})}
+				</div>
 			</div>
 		</div>
+	);
+}
+
+export default function Callback() {
+	return (
+		<Suspense
+			fallback={
+				<div className="flex min-h-screen flex-col items-center justify-center p-4">
+					<div className="mx-auto flex w-full max-w-6xl flex-col gap-8">
+						<div className="mx-auto flex w-full max-w-6xl flex-col gap-2">
+							<div className="h-8 w-3/4 animate-pulse rounded-md bg-muted md:w-1/2" />
+							<div className="h-4 w-full animate-pulse rounded-md bg-muted md:w-3/4" />
+						</div>
+
+						{/* Just a few skeleton cards for the fallback */}
+						<div className="mx-auto grid w-full max-w-7xl grid-cols-1 gap-6 md:grid-cols-3 lg:grid-cols-4">
+							{Array.from({ length: 4 }).map((_, _index) => {
+								const fallbackId = `fallback-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+								return (
+									<div key={fallbackId} className="flex flex-col rounded-lg border bg-card shadow-sm">
+										<div className="p-4">
+											<div className="mb-2 h-6 w-3/4 animate-pulse rounded-md bg-muted" />
+										</div>
+										<div className="px-4 py-2">
+											<div className="relative mb-2 aspect-square w-full animate-pulse rounded-md bg-muted" />
+											<div className="mb-2 h-4 w-20 animate-pulse rounded-md bg-muted" />
+										</div>
+										<div className="p-4 pt-0">
+											<div className="h-10 w-full animate-pulse rounded-md bg-muted" />
+										</div>
+									</div>
+								);
+							})}
+						</div>
+					</div>
+				</div>
+			}
+		>
+			<CallbackContent />
+		</Suspense>
 	);
 }

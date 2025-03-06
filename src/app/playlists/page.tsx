@@ -31,7 +31,7 @@ import {
 	verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical, LogOut, Music, RefreshCw, Save } from "lucide-react";
+import { GripVertical, Music, RefreshCw, Save } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -86,8 +86,6 @@ function SortableTrackItem({
 export default function PlaylistsPage() {
 	const router = useRouter();
 	const [playlists, setPlaylists] = useState<SpotifyPlaylistWithMeta[]>([]);
-	const [userProfile, setUserProfile] = useState<SpotifyUserProfile | null>(null);
-	const [isLoading, setIsLoading] = useState(true);
 	const [isProcessing, setIsProcessing] = useState(false);
 	const [currentPlaylistId, setCurrentPlaylistId] = useState<string | null>(null);
 
@@ -135,7 +133,8 @@ export default function PlaylistsPage() {
 	useEffect(() => {
 		// Check if user is logged in
 		if (!isLoggedIn()) {
-			router.push("/");
+			// Use replace instead of push for a more immediate redirect
+			router.replace("/");
 			return;
 		}
 
@@ -143,8 +142,9 @@ export default function PlaylistsPage() {
 		const loadData = async () => {
 			try {
 				setIsLoading(true);
-				const profile = await getUserProfile();
-				setUserProfile(profile);
+				// Verify user is authenticated (will throw error if not authorized)
+				// User profile is now managed globally by the header component
+				await getUserProfile();
 
 				// Get only playlists the user can edit
 				const editablePlaylists = await getEditablePlaylists();
@@ -159,14 +159,6 @@ export default function PlaylistsPage() {
 
 		loadData();
 	}, [router]);
-
-	const handleLogout = () => {
-		if (typeof window !== "undefined") {
-			localStorage.removeItem("spotify_token_data");
-			localStorage.removeItem("spotify_auth_state");
-			router.push("/");
-		}
-	};
 
 	const createRainbowPlaylist = async (playlist: SpotifyPlaylist) => {
 		try {
@@ -287,76 +279,28 @@ export default function PlaylistsPage() {
 		}
 	};
 
-	if (isLoading) {
+	// State to track if we're in client-side rendering
+	const [isClient, setIsClient] = useState(false);
+
+	// State to track if playlists are loading
+	const [isLoading, setIsLoading] = useState(true);
+
+	// Set isClient to true once component mounts (client-side only)
+	useEffect(() => {
+		setIsClient(true);
+	}, []);
+
+	// Handle auth check - this will only run client-side now
+	useEffect(() => {
+		if (isClient && !isLoggedIn()) {
+			router.replace("/");
+		}
+	}, [isClient, router]);
+
+	// Prepare a skeleton UI for initial server render that won't cause hydration mismatches
+	if (!isClient) {
 		return (
-			<div className="flex min-h-screen items-center justify-center">
-				<div className="text-center">
-					<div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-primary border-b-2" />
-					<h2 className="font-semibold text-xl">Loading your playlists...</h2>
-				</div>
-			</div>
-		);
-	}
-
-	return (
-		<div className="flex min-h-screen flex-col">
-			<header className="flex items-center justify-between border-b px-6 py-4">
-				<div className="flex items-center gap-2">
-					<svg
-						width="24"
-						height="24"
-						viewBox="0 0 24 24"
-						fill="none"
-						xmlns="http://www.w3.org/2000/svg"
-						className="rainbow-icon h-6 w-6"
-						aria-labelledby="musicIconTitle"
-					>
-						<title id="musicIconTitle">Music Icon</title>
-						{/* Music icon path from Lucide with animated rainbow colors */}
-						<path
-							d="M9 18V5l12-2v13"
-							stroke="currentColor"
-							strokeWidth="2"
-							strokeLinecap="round"
-							strokeLinejoin="round"
-						/>
-						<circle
-							cx="6"
-							cy="18"
-							r="3"
-							stroke="currentColor"
-							strokeWidth="2"
-							strokeLinecap="round"
-							strokeLinejoin="round"
-						/>
-						<circle
-							cx="18"
-							cy="16"
-							r="3"
-							stroke="currentColor"
-							strokeWidth="2"
-							strokeLinecap="round"
-							strokeLinejoin="round"
-						/>
-					</svg>
-					<h1 className="rainbow-text font-bold text-xl">Rainbow Playlists</h1>
-				</div>
-				<div className="flex items-center gap-4">
-					{userProfile && (
-						<div className="flex items-center gap-2">
-							<span className="hidden text-sm md:inline">Hello, {userProfile.display_name}</span>
-							{userProfile.images?.[0]?.url && (
-								<img src={userProfile.images[0].url} alt={userProfile.display_name} className="h-8 w-8 rounded-full" />
-							)}
-						</div>
-					)}
-					<Button variant="ghost" size="sm" onClick={handleLogout}>
-						<LogOut className="mr-2 h-4 w-4" /> Logout
-					</Button>
-				</div>
-			</header>
-
-			<main className="w-full flex-1 px-6 py-8 md:px-8 md:py-10">
+			<div className="w-full px-6 py-8 md:px-8 md:py-10">
 				<div className="mx-auto flex w-full flex-col gap-8">
 					<div className="mx-auto flex w-full max-w-6xl flex-col gap-2">
 						<h2 className="text-center font-bold text-3xl tracking-tight md:text-left">Your Editable Playlists</h2>
@@ -365,54 +309,110 @@ export default function PlaylistsPage() {
 							on album cover colors.
 						</p>
 					</div>
+					<div className="mx-auto grid w-full max-w-7xl grid-cols-1 gap-6 md:grid-cols-3 lg:grid-cols-4">
+						{/* Just a few skeleton cards for server-side rendering */}
+						{Array.from({ length: 4 }).map((_, _index) => {
+							const skeletonId = `ssr-skeleton-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+							return (
+								<div key={skeletonId} className="flex flex-col rounded-lg border bg-card shadow-sm">
+									<div className="p-4">
+										<div className="mb-2 h-6 w-3/4 rounded-md bg-muted" />
+									</div>
+									<div className="px-4 py-2">
+										<div className="relative mb-2 aspect-square w-full rounded-md bg-muted" />
+										<div className="mb-2 h-4 w-20 rounded-md bg-muted" />
+									</div>
+									<div className="p-4 pt-0">
+										<div className="h-10 w-full rounded-md bg-muted" />
+									</div>
+								</div>
+							);
+						})}
+					</div>
+				</div>
+			</div>
+		);
+	}
 
-					{playlists.length === 0 ? (
-						<div className="py-12 text-center">
-							<p className="mb-4 text-lg">You don't have any playlists yet.</p>
-							<Button onClick={() => router.push("/")}>Return Home</Button>
-						</div>
-					) : (
-						<div className="mx-auto grid w-full max-w-7xl grid-cols-1 gap-6 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-							{playlists.map((playlist) => (
-								<Card key={playlist.id} className="flex flex-col">
+	// Ensure a stable DOM structure that's identical on both server and client
+	return (
+		<div className="w-full px-6 py-8 md:px-8 md:py-10">
+			<div className="mx-auto flex w-full flex-col gap-8">
+				<div className="mx-auto flex w-full max-w-6xl flex-col gap-2">
+					<h2 className="text-center font-bold text-3xl tracking-tight md:text-left">Your Editable Playlists</h2>
+					<p className="text-center text-muted-foreground md:text-left">
+						Showing only playlists you can edit. Select a playlist to reorder its tracks into a rainbow pattern based on
+						album cover colors.
+					</p>
+				</div>
+
+				{/* Only show dynamic content after client-side hydration */}
+				{!isClient || isLoading ? (
+					<div className="mx-auto grid w-full max-w-7xl grid-cols-1 gap-6 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+						{/* Skeleton cards to show while loading */}
+						{Array.from({ length: 10 }).map((_, _index) => {
+							const skeletonId = `skeleton-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+							return (
+								<Card key={skeletonId} className="flex flex-col">
 									<CardHeader className="pt-4 pb-2">
-										<CardTitle className="line-clamp-1">{playlist.name}</CardTitle>
+										<div className="h-6 w-3/4 animate-pulse rounded-md bg-muted" />
 									</CardHeader>
 									<CardContent className="pt-0 pb-2">
-										<div className="relative mb-2 aspect-square w-full overflow-hidden rounded-md">
-											{playlist.images?.[0]?.url ? (
-												<img src={playlist.images[0].url} alt={playlist.name} className="h-full w-full object-cover" />
-											) : (
-												<div className="flex h-full w-full items-center justify-center bg-muted">
-													<Music className="h-12 w-12 text-muted-foreground" />
-												</div>
-											)}
-										</div>
-										<p className="text-muted-foreground text-sm">{playlist.tracks.total} songs</p>
+										<div className="relative mb-2 aspect-square w-full animate-pulse overflow-hidden rounded-md bg-muted" />
+										<div className="h-4 w-20 animate-pulse rounded-md bg-muted" />
 									</CardContent>
 									<CardFooter className="pt-0">
-										<Button
-											onClick={() => createRainbowPlaylist(playlist)}
-											disabled={isProcessing}
-											className="w-full"
-											variant={currentPlaylistId === playlist.id ? "secondary" : "default"}
-										>
-											{currentPlaylistId === playlist.id ? (
-												<>
-													<RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-													Processing...
-												</>
-											) : (
-												"Create Rainbow Order"
-											)}
-										</Button>
+										<div className="h-10 w-full animate-pulse rounded-md bg-muted" />
 									</CardFooter>
 								</Card>
-							))}
-						</div>
-					)}
-				</div>
-			</main>
+							);
+						})}
+					</div>
+				) : playlists.length === 0 ? (
+					<div className="py-12 text-center">
+						<p className="mb-4 text-lg">You don't have any playlists yet. Create some to get started!</p>
+					</div>
+				) : (
+					<div className="mx-auto grid w-full max-w-7xl grid-cols-1 gap-6 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+						{playlists.map((playlist) => (
+							<Card key={playlist.id} className="flex flex-col">
+								<CardHeader className="pt-4 pb-2">
+									<CardTitle className="line-clamp-1">{playlist.name}</CardTitle>
+								</CardHeader>
+								<CardContent className="pt-0 pb-2">
+									<div className="relative mb-2 aspect-square w-full overflow-hidden rounded-md">
+										{playlist.images?.[0]?.url ? (
+											<img src={playlist.images[0].url} alt={playlist.name} className="h-full w-full object-cover" />
+										) : (
+											<div className="flex h-full w-full items-center justify-center bg-muted">
+												<Music className="h-12 w-12 text-muted-foreground" />
+											</div>
+										)}
+									</div>
+									<p className="text-muted-foreground text-sm">{playlist.tracks.total} songs</p>
+								</CardContent>
+								<CardFooter className="pt-0">
+									<Button
+										onClick={() => createRainbowPlaylist(playlist)}
+										disabled={isProcessing}
+										className="w-full"
+										variant={currentPlaylistId === playlist.id ? "secondary" : "default"}
+									>
+										{currentPlaylistId === playlist.id ? (
+											<>
+												<RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+												Processing...
+											</>
+										) : (
+											"Create Rainbow Order"
+										)}
+									</Button>
+								</CardFooter>
+							</Card>
+						))}
+					</div>
+				)}
+			</div>
 
 			{/* Preview modal for rainbow playlist */}
 			<Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
@@ -509,10 +509,6 @@ export default function PlaylistsPage() {
 					</DialogFooter>
 				</DialogContent>
 			</Dialog>
-
-			<footer className="border-t py-6 text-center text-muted-foreground text-sm">
-				<p>&#xa9; {new Date().getFullYear()} Rainbow Playlists. All rights reserved.</p>
-			</footer>
 		</div>
 	);
 }
