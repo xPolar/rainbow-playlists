@@ -10,6 +10,7 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
 	type SpotifyPlaylist,
 	type SpotifyPlaylistTrack,
@@ -491,19 +492,26 @@ export default function PlaylistsPage() {
 									purge duplicates
 								</Button>
 							)}
-							<Button variant="default" onClick={applyRainbowOrder} disabled={isApplyingChanges}>
-								{isApplyingChanges ? (
-									<>
-										<RefreshCw className="h-4 w-4 animate-spin" />
-										applying...
-									</>
-								) : (
-									<>
-										<Save className="h-4 w-4" />
-										save
-									</>
-								)}
-							</Button>
+							<Tooltip>
+								<TooltipTrigger asChild>
+									<Button variant="default" onClick={applyRainbowOrder} disabled={isApplyingChanges}>
+										{isApplyingChanges ? (
+											<>
+												<RefreshCw className="h-4 w-4 animate-spin" />
+												applying...
+											</>
+										) : (
+											<>
+												<Save className="h-4 w-4" />
+												save
+											</>
+										)}
+									</Button>
+								</TooltipTrigger>
+								<TooltipContent>
+									<p>warning: this will reset the "data added" field for all songs.</p>
+								</TooltipContent>
+							</Tooltip>
 						</div>
 					</DialogFooter>
 				</DialogContent>

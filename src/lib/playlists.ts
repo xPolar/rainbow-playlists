@@ -306,6 +306,7 @@ export const getPlaylistTracks = async (
 };
 
 // API call to reorder tracks in a playlist
+// Handles Spotify's limitation of 100 tracks per request
 export const reorderPlaylistTracks = async (
 	playlistId: string,
 	uris: string[],
@@ -315,29 +316,100 @@ export const reorderPlaylistTracks = async (
 	if (!accessToken) return null;
 
 	try {
-		const response = await fetch(`${API_BASE}/playlists/${playlistId}/tracks`, {
-			method: "PUT",
-			headers: {
-				Authorization: `Bearer ${accessToken}`,
-				"Content-Type": "application/json",
-			},
-			body: JSON.stringify({
-				uris,
-				snapshot_id: snapshotId,
-			}),
-		});
+		// Spotify API can only handle 100 items per request
+		const SPOTIFY_CHUNK_LIMIT = 100;
+		let currentSnapshotId = snapshotId;
+		let result: { snapshot_id: string } | null = null;
 
-		if (!response.ok) {
-			const errorText = await response.text();
-			console.error("Failed to reorder playlist tracks:", {
-				status: response.status,
-				statusText: response.statusText,
-				body: errorText,
+		// If we have more than the chunk limit, we need to process in batches
+		if (uris.length > SPOTIFY_CHUNK_LIMIT) {
+			// First, clear the playlist completely
+			const clearResponse = await fetch(`${API_BASE}/playlists/${playlistId}/tracks`, {
+				method: "PUT",
+				headers: {
+					Authorization: `Bearer ${accessToken}`,
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({
+					uris: [], // Empty array to clear the playlist
+					snapshot_id: currentSnapshotId,
+				}),
 			});
-			throw new Error(`Failed to reorder playlist tracks: ${response.status} ${response.statusText}`);
+
+			if (!clearResponse.ok) {
+				const errorText = await clearResponse.text();
+				console.error("Failed to clear playlist tracks:", {
+					status: clearResponse.status,
+					statusText: clearResponse.statusText,
+					body: errorText,
+				});
+				throw new Error(`Failed to clear playlist tracks: ${clearResponse.status} ${clearResponse.statusText}`);
+			}
+
+			// Update the snapshot ID after clearing
+			result = await clearResponse.json();
+			currentSnapshotId = result!.snapshot_id;
+
+			// Now add all tracks in batches
+			for (let i = 0; i < uris.length; i += SPOTIFY_CHUNK_LIMIT) {
+				// Get the current chunk of URIs (max 100)
+				const urisChunk = uris.slice(i, Math.min(i + SPOTIFY_CHUNK_LIMIT, uris.length));
+
+				const response: Response = await fetch(`${API_BASE}/playlists/${playlistId}/tracks`, {
+					method: "POST", // Always use POST since we're adding to an empty or partially filled playlist
+					headers: {
+						Authorization: `Bearer ${accessToken}`,
+						"Content-Type": "application/json",
+					},
+					body: JSON.stringify({
+						uris: urisChunk,
+						position: i, // Specify the position to ensure tracks are added in the correct order
+						snapshot_id: currentSnapshotId,
+					}),
+				});
+
+				if (!response.ok) {
+					const errorText = await response.text();
+					console.error(`Failed to add playlist tracks (chunk ${i / SPOTIFY_CHUNK_LIMIT + 1}):`, {
+						status: response.status,
+						statusText: response.statusText,
+						body: errorText,
+					});
+					throw new Error(`Failed to reorder playlist tracks: ${response.status} ${response.statusText}`);
+				}
+
+				// Update the snapshot ID for the next request
+				result = await response.json();
+				currentSnapshotId = result!.snapshot_id;
+			}
+		} else {
+			// For playlists with 100 or fewer tracks, use a single request
+			const response = await fetch(`${API_BASE}/playlists/${playlistId}/tracks`, {
+				method: "PUT",
+				headers: {
+					Authorization: `Bearer ${accessToken}`,
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({
+					uris,
+					snapshot_id: currentSnapshotId,
+				}),
+			});
+
+			if (!response.ok) {
+				const errorText = await response.text();
+				console.error("Failed to reorder playlist tracks:", {
+					status: response.status,
+					statusText: response.statusText,
+					body: errorText,
+				});
+				throw new Error(`Failed to reorder playlist tracks: ${response.status} ${response.statusText}`);
+			}
+
+			result = await response.json();
 		}
 
-		return await response.json();
+		return result;
 	} catch (error) {
 		console.error("Error reordering playlist tracks:", error);
 		return null;
