@@ -1,101 +1,155 @@
-import Image from "next/image";
+"use client";
+
+import { ThemeToggle } from "@/components/theme/theme-toggle";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { getAuthUrl, isLoggedIn } from "@/lib/spotify";
+import { ArrowRight, Music, RefreshCw, Shuffle } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+	const router = useRouter();
+	const [isLoading, setIsLoading] = useState(false);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
-  );
+	useEffect(() => {
+		// Check if user is already logged in and redirect to playlists page
+		if (isLoggedIn()) {
+			router.push("/playlists");
+		}
+	}, [router]);
+
+	const handleLoginWithSpotify = async () => {
+		setIsLoading(true);
+		try {
+			// Get authorization URL with PKCE challenge
+			const authUrl = await getAuthUrl();
+			// Redirect to Spotify authorization page
+			window.location.href = authUrl;
+		} catch (error) {
+			console.error("Error generating authorization URL:", error);
+			setIsLoading(false);
+		}
+	};
+
+	return (
+		<div className="flex min-h-screen flex-col">
+			<header className="flex items-center justify-between border-b px-6 py-4">
+				<div className="flex items-center gap-2">
+					<Music className="rainbow-icon h-6 w-6" />
+					<h1 className="rainbow-text font-bold text-xl">Rainbow Playlists</h1>
+				</div>
+				<ThemeToggle />
+			</header>
+
+			<main className="w-full flex-1 px-6 py-12 md:px-8 md:py-20">
+				<div className="mx-auto flex w-full flex-col gap-12">
+					{/* Hero section */}
+					<div className="mx-auto flex max-w-6xl flex-col items-center space-y-6 text-center">
+						<h1 className="font-bold text-4xl tracking-tight md:text-6xl">Transform Your Spotify Playlists</h1>
+						<p className="max-w-3xl text-muted-foreground text-xl">
+							Create beautiful rainbow-sorted playlists based on album cover colors with just a few clicks.
+						</p>
+						<Button
+							size="lg"
+							onClick={handleLoginWithSpotify}
+							disabled={isLoading}
+							className="mt-4 h-auto gap-2 px-8 py-6 text-lg"
+						>
+							{isLoading ? (
+								<>
+									<RefreshCw className="mr-2 h-5 w-5 animate-spin" />
+									Connecting...
+								</>
+							) : (
+								<>
+									Connect with Spotify
+									<ArrowRight className="ml-2 h-5 w-5" />
+								</>
+							)}
+						</Button>
+					</div>
+
+					{/* How it works section */}
+					<div className="w-full border-t pt-12">
+						<h2 className="mb-12 text-center font-bold text-3xl">How It Works</h2>
+						<div className="mx-auto grid max-w-6xl grid-cols-1 gap-8 md:grid-cols-3">
+							<Card className="border-none shadow-md">
+								<CardHeader>
+									<div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+										<Music className="h-6 w-6 text-primary" />
+									</div>
+									<CardTitle>1. Connect Spotify</CardTitle>
+								</CardHeader>
+								<CardContent>
+									<p className="text-muted-foreground">Login with your Spotify account to access your playlists.</p>
+								</CardContent>
+							</Card>
+							<Card className="border-none shadow-md">
+								<CardHeader>
+									<div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+										<Shuffle className="h-6 w-6 text-primary" />
+									</div>
+									<CardTitle>2. Select a Playlist</CardTitle>
+								</CardHeader>
+								<CardContent>
+									<p className="text-muted-foreground">
+										Choose any playlist from your Spotify library that you want to transform.
+									</p>
+								</CardContent>
+							</Card>
+							<Card className="border-none shadow-md">
+								<CardHeader>
+									<div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+										<RefreshCw className="h-6 w-6 text-primary" />
+									</div>
+									<CardTitle>3. Transform to Rainbow</CardTitle>
+								</CardHeader>
+								<CardContent>
+									<p className="text-muted-foreground">
+										We'll analyze and arrange your tracks in a beautiful rainbow pattern based on album colors.
+									</p>
+								</CardContent>
+							</Card>
+						</div>
+					</div>
+
+					{/* Features Section */}
+					<div className="w-full space-y-6 pt-8">
+						<h2 className="mb-8 text-center font-bold text-3xl">Features</h2>
+						<div className="mx-auto grid max-w-7xl grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+							<div className="rounded-lg bg-muted/50 p-6">
+								<h3 className="mb-2 font-semibold text-xl">Color Analysis</h3>
+								<p className="text-muted-foreground">
+									Sophisticated algorithm that analyzes album art colors to create visually pleasing sequences.
+								</p>
+							</div>
+							<div className="rounded-lg bg-muted/50 p-6">
+								<h3 className="mb-2 font-semibold text-xl">Spotify Integration</h3>
+								<p className="text-muted-foreground">
+									Seamlessly works with your existing Spotify playlists without creating duplicates.
+								</p>
+							</div>
+							<div className="rounded-lg bg-muted/50 p-6">
+								<h3 className="mb-2 font-semibold text-xl">Direct Sorting</h3>
+								<p className="text-muted-foreground">
+									Changes are applied directly to your playlist, so you can immediately enjoy your rainbow playlist.
+								</p>
+							</div>
+							<div className="rounded-lg bg-muted/50 p-6">
+								<h3 className="mb-2 font-semibold text-xl">Simple Process</h3>
+								<p className="text-muted-foreground">
+									Transform any playlist with just a few clicks - no technical knowledge required.
+								</p>
+							</div>
+						</div>
+					</div>
+				</div>
+			</main>
+
+			<footer className="border-t py-6 text-center text-muted-foreground text-sm">
+				<p>&#xa9; {new Date().getFullYear()} Rainbow Playlists. All rights reserved.</p>
+			</footer>
+		</div>
+	);
 }
