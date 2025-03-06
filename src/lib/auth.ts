@@ -5,7 +5,7 @@ const AUTH_ENDPOINT = "https://accounts.spotify.com/authorize";
 const TOKEN_ENDPOINT = "https://accounts.spotify.com/api/token";
 
 // Redirect URI (needs to be added to your Spotify Developer Dashboard)
-const REDIRECT_URI = "http://localhost:3000/callback";
+const REDIRECT_URI = process.env.NEXT_PUBLIC_SPOTIFY_CALLBACK_URL!;
 
 // Scopes needed for our application
 const SCOPE = [
@@ -18,7 +18,7 @@ const SCOPE = [
 ].join(" ");
 
 // You'll need to add your Spotify Client ID to your .env.local file
-const CLIENT_ID = process.env.NEXT_PUBLIC_SPOTIFY_CLIENT_ID;
+const CLIENT_ID = process.env.NEXT_PUBLIC_SPOTIFY_CLIENT_ID!;
 
 // Generate a random string for the state parameter and code verifier
 export const generateRandomString = (length: number): string => {
