@@ -18,8 +18,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-	title: "Rainbow Playlists",
-	description: "Create beautiful playlists with Rainbow",
+	title: "rainbow playlists",
+	description: "make rainbow playlists",
 };
 
 export default function RootLayout({
