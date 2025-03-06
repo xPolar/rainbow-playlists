@@ -1,6 +1,8 @@
 import { Header } from "@/components/layout/header";
 import { ThemeProvider } from "@/components/theme/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
+import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
@@ -35,12 +37,17 @@ export default function RootLayout({
 						<footer className="border-t py-6 text-center text-muted-foreground text-sm">
 							<p>
 								made with ❤️ by{" "}
-								<a className="hover:underline" href="https://x.com/xPolarrr" rel="noopener noreferrer" target="_blank">
+								<a
+									className="underline hover:no-underline"
+									href="https://x.com/xPolarrr"
+									rel="noopener noreferrer"
+									target="_blank"
+								>
 									haris
 								</a>{" "}
 								(
 								<a
-									className="hover:underline"
+									className="underline hover:no-underline"
 									href="https://github.com/xPolar/rainbow-playlists"
 									rel="noopener noreferrer"
 									target="_blank"
@@ -52,6 +59,8 @@ export default function RootLayout({
 						</footer>
 					</div>
 					<Toaster />
+					<SpeedInsights />
+					<Analytics />
 				</ThemeProvider>
 			</body>
 		</html>
