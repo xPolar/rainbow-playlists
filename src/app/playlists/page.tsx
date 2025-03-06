@@ -151,7 +151,7 @@ export default function PlaylistsPage() {
 				setPlaylists(editablePlaylists);
 			} catch (error) {
 				console.error("Error loading data:", error);
-				toast.error("Failed to load your playlists");
+				toast.error("i couldn't load your playlists :(");
 			} finally {
 				setIsLoading(false);
 			}
@@ -169,11 +169,11 @@ export default function PlaylistsPage() {
 			// 1. Get all tracks from the playlist
 			const tracksData = await getPlaylistTracks(playlist.id);
 			if (!tracksData?.items || tracksData.items.length === 0) {
-				toast.error("No tracks found in this playlist");
+				toast.error("i couldn't find any songs in this playlist :(");
 				return;
 			}
 
-			toast.info(`Processing ${tracksData.items.length} tracks from "${playlist.name}"...`);
+			toast.info(`processing ${tracksData.items.length} tracks from "${playlist.name}"...`);
 
 			// Save original tracks for reference
 			setOriginalTracks(tracksData.items);
@@ -195,7 +195,7 @@ export default function PlaylistsPage() {
 			setCurrentPlaylistId(null);
 		} catch (error) {
 			console.error("Error creating rainbow playlist preview:", error);
-			toast.error("Error creating rainbow playlist preview");
+			toast.error("error creating rainbow playlist preview :(");
 			setIsProcessing(false);
 			setCurrentPlaylistId(null);
 		}
@@ -247,7 +247,11 @@ export default function PlaylistsPage() {
 		// Update state with unique tracks
 		setSortedTracks(uniqueTracks);
 		setHasDuplicates(false);
-		toast.success(`Removed ${sortedTracks.length - uniqueTracks.length} duplicate track(s)`);
+		toast.success(
+			`removed ${sortedTracks.length - uniqueTracks.length} duplicate track${
+				sortedTracks.length - uniqueTracks.length === 1 ? "" : "s"
+			}`
+		);
 	};
 
 	// Apply changes to the actual playlist
@@ -264,15 +268,15 @@ export default function PlaylistsPage() {
 			const result = await reorderPlaylistTracks(previewPlaylist.id, trackUris, previewPlaylist.snapshot_id);
 
 			if (result) {
-				toast.success(`Successfully reordered "${previewPlaylist.name}" into a rainbow!`);
+				toast.success(`"${previewPlaylist.name}" tasted the rainbow`);
 				// Close the preview modal
 				setIsPreviewOpen(false);
 			} else {
-				toast.error("Failed to reorder playlist");
+				toast.error("i couldn't apply the rainbow order :(");
 			}
 		} catch (error) {
 			console.error("Error applying rainbow order:", error);
-			toast.error("Error applying rainbow order");
+			toast.error("error applying rainbow order :(");
 		} finally {
 			setIsApplyingChanges(false);
 			setCurrentPlaylistId(null);
@@ -303,10 +307,9 @@ export default function PlaylistsPage() {
 			<div className="w-full px-6 py-8 md:px-8 md:py-10">
 				<div className="mx-auto flex w-full flex-col gap-8">
 					<div className="mx-auto flex w-full max-w-6xl flex-col gap-2">
-						<h2 className="text-center font-bold text-3xl tracking-tight md:text-left">Your Editable Playlists</h2>
+						<h2 className="text-center font-bold text-3xl tracking-tight md:text-left">your playlists</h2>
 						<p className="text-center text-muted-foreground md:text-left">
-							Showing only playlists you can edit. Select a playlist to reorder its tracks into a rainbow pattern based
-							on album cover colors.
+							these are only playlists you can edit. choose one.
 						</p>
 					</div>
 					<div className="mx-auto grid w-full max-w-7xl grid-cols-1 gap-6 md:grid-cols-3 lg:grid-cols-4">
@@ -339,10 +342,9 @@ export default function PlaylistsPage() {
 		<div className="w-full px-6 py-8 md:px-8 md:py-10">
 			<div className="mx-auto flex w-full flex-col gap-8">
 				<div className="mx-auto flex w-full max-w-6xl flex-col gap-2">
-					<h2 className="text-center font-bold text-3xl tracking-tight md:text-left">Your Editable Playlists</h2>
+					<h2 className="text-center font-bold text-3xl tracking-tight md:text-left">your playlists</h2>
 					<p className="text-center text-muted-foreground md:text-left">
-						Showing only playlists you can edit. Select a playlist to reorder its tracks into a rainbow pattern based on
-						album cover colors.
+						these are only playlists you can edit. choose one.
 					</p>
 				</div>
 
@@ -370,7 +372,7 @@ export default function PlaylistsPage() {
 					</div>
 				) : playlists.length === 0 ? (
 					<div className="py-12 text-center">
-						<p className="mb-4 text-lg">You don't have any playlists yet. Create some to get started!</p>
+						<p className="mb-4 text-lg">make some playlists.</p>
 					</div>
 				) : (
 					<div className="mx-auto grid w-full max-w-7xl grid-cols-1 gap-6 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
@@ -401,10 +403,10 @@ export default function PlaylistsPage() {
 										{currentPlaylistId === playlist.id ? (
 											<>
 												<RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-												Processing...
+												processing...
 											</>
 										) : (
-											"Create Rainbow Order"
+											"taste the rainbow"
 										)}
 									</Button>
 								</CardFooter>
@@ -432,12 +434,9 @@ export default function PlaylistsPage() {
 									</div>
 								)}
 							</div>
-							Rainbow Preview: {previewPlaylist?.name}
+							preview: {previewPlaylist?.name}
 						</DialogTitle>
-						<DialogDescription>
-							Tracks are arranged in rainbow order based on album colors. Drag and drop to customize the order before
-							saving.
-						</DialogDescription>
+						<DialogDescription>tracks are arranged based on album cover. drag and drop to re-order.</DialogDescription>
 					</DialogHeader>
 
 					<div className="max-h-[500px] overflow-y-auto pr-1">
@@ -467,7 +466,7 @@ export default function PlaylistsPage() {
 							}}
 							disabled={isApplyingChanges}
 						>
-							Cancel
+							nevermind
 						</Button>
 						<div className="flex gap-2">
 							<Button
@@ -477,7 +476,7 @@ export default function PlaylistsPage() {
 										// Randomize tracks when shift is held
 										const shuffled = [...sortedTracks].sort(() => Math.random() - 0.5);
 										setSortedTracks(shuffled);
-										toast.success("Tracks randomized successfully");
+										toast.success("tracks randomized successfully");
 									} else {
 										// Reset to original when shift is not held
 										setSortedTracks([...originalTracks]);
@@ -485,23 +484,23 @@ export default function PlaylistsPage() {
 								}}
 								disabled={isApplyingChanges}
 							>
-								{isShiftKeyDown ? "Randomize" : "Reset to Original"}
+								{isShiftKeyDown ? "mix it up" : "reset"}
 							</Button>
 							{hasDuplicates && (
 								<Button variant="outline" onClick={purgeDuplicates} disabled={isApplyingChanges}>
-									Purge Duplicates
+									purge duplicates
 								</Button>
 							)}
 							<Button variant="default" onClick={applyRainbowOrder} disabled={isApplyingChanges}>
 								{isApplyingChanges ? (
 									<>
-										<RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-										Applying...
+										<RefreshCw className="h-4 w-4 animate-spin" />
+										applying...
 									</>
 								) : (
 									<>
-										<Save className="mr-2 h-4 w-4" />
-										Save Rainbow Order
+										<Save className="h-4 w-4" />
+										save
 									</>
 								)}
 							</Button>

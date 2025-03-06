@@ -63,7 +63,7 @@ export function Header() {
 		setUserProfile(null);
 
 		// Show success message
-		toast.success("Successfully logged out");
+		toast.success("bye :(");
 
 		// Redirect to home page
 		router.push("/");
@@ -74,7 +74,7 @@ export function Header() {
 			<div className="flex items-center gap-2">
 				<Link href="/" className="flex items-center gap-2">
 					<Music className="rainbow-icon h-6 w-6" />
-					<h1 className="rainbow-text font-bold text-xl">Rainbow Playlists</h1>
+					<h1 className="rainbow-text font-bold text-xl">rainbow playlists</h1>
 				</Link>
 			</div>
 			<div className="flex items-center gap-4">
