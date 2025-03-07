@@ -509,7 +509,7 @@ export default function PlaylistsPage() {
 									</Button>
 								</TooltipTrigger>
 								<TooltipContent>
-									<p>warning: this will reset the "data added" field for all songs.</p>
+									<p>warning: this will reset the "date added" field for all songs.</p>
 								</TooltipContent>
 							</Tooltip>
 						</div>
