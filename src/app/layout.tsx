@@ -34,7 +34,7 @@ export default function RootLayout({
 					<div className="flex min-h-screen flex-col justify-between">
 						<Header />
 						<main className="flex-1">{children}</main>
-						<footer className="mt-auto border-t py-6 text-center text-muted-foreground text-sm">
+						{/* <footer className="mt-auto border-t py-6 text-center text-muted-foreground text-sm">
 							<p>
 								made with ❤️ by{" "}
 								<a
@@ -56,7 +56,7 @@ export default function RootLayout({
 								</a>
 								)
 							</p>
-						</footer>
+						</footer> */}
 					</div>
 					<Toaster />
 					<SpeedInsights />
